@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.quantization
 from torch.quantization import QuantStub, DeQuantStub
 
+
+
+# --------------------------------- Original Model ---------------------------------
 class SimpleModel(nn.Module):
     def __init__(self):
         super(SimpleModel, self).__init__()
@@ -21,10 +24,16 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = SimpleModel().to(device)
 model = model.eval().to(torch.device('cpu'))
 
+
+
+# --------------------------------- Before Inference ---------------------------------
 input = torch.rand((1, 1, 28, 28))
 output = model(input)
 print("-------------------Before:", output.shape)
 
+
+
+# --------------------------------- Quantization Model ---------------------------------
 class QuantizableSimpleModel(nn.Module):
     def __init__(self, model):
         super(QuantizableSimpleModel, self).__init__()
@@ -41,8 +50,24 @@ class QuantizableSimpleModel(nn.Module):
 quant_model = QuantizableSimpleModel(model)
 quant_model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
 torch.quantization.prepare(quant_model, inplace=True)
-quant_model = torch.quantization.convert(quant_model, inplace=True)
+torch.quantization.convert(quant_model, inplace=True)
 
+
+# --------------------------------- Save and Load ---------------------------------
+torch.save(quant_model.state_dict(), "weights/td500_resnet50_quant.pth")
+
+quant_model2 = QuantizableSimpleModel(SimpleModel())
+quant_model2.qconfig = torch.quantization.get_default_qconfig('fbgemm')
+torch.quantization.prepare(quant_model2, inplace=True)
+torch.quantization.convert(quant_model2, inplace=True)
+
+quant_model2.load_state_dict(torch.load("weights/td500_resnet50_quant.pth"))
+
+
+
+# --------------------------------- After Inference ---------------------------------
 input = torch.rand((1, 1, 28, 28))
 output = quant_model(input)
 print("-------------------After:", output.shape)
+
+print(output.dtype) # torch.float32
