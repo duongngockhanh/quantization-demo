@@ -48,8 +48,7 @@ class QuantizableSimpleModel(nn.Module):
         return x
 
 quant_model = QuantizableSimpleModel(model)
-torch.backends.quantized.engine = 'qnnpack'
-quant_model.qconfig = torch.quantization.get_default_qconfig('qnnpack')
+quant_model.qconfig = torch.quantization.get_default_qconfig('fbgemm')
 torch.quantization.prepare(quant_model, inplace=True)
 torch.quantization.convert(quant_model, inplace=True)
 
@@ -58,8 +57,7 @@ torch.quantization.convert(quant_model, inplace=True)
 torch.save(quant_model.state_dict(), "weights/td500_resnet50_quant.pth")
 
 quant_model2 = QuantizableSimpleModel(SimpleModel())
-torch.backends.quantized.engine = 'qnnpack'
-quant_model.qconfig = torch.quantization.get_default_qconfig('qnnpack')
+quant_model2.qconfig = torch.quantization.get_default_qconfig('fbgemm')
 torch.quantization.prepare(quant_model2, inplace=True)
 torch.quantization.convert(quant_model2, inplace=True)
 
